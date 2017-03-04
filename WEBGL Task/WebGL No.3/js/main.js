@@ -1,49 +1,63 @@
-(function () {
-    //THREE三要素：场景、摄像机、渲染器
-    var scene, camera, renderer;
+function init() {
+    "use strict";
+    var scene, camera, renderer, controls, stats, textureLoader, cubeMaterials, i, cube, createWheel, texturePlane, spotLight, ambientLight;
 
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 1, 1000);
+    //stats
+    /*global Stats*/
+    stats = new Stats(); // 开启性能监视
+    document.body.appendChild(stats.dom);
+
+    //camera
+    /*global THREE*/
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.set(2.41, 1.2, 1.66);
     //camera.position.set(0, 0, 5);
     camera.lookAt(new THREE.Vector3(10, 0, 0));
+
+    //scene
+    scene = new THREE.Scene();
+
+    //renderer
     renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        precision: "highp"
+        antialias: true, // 抗锯齿
+        precision: "highp" // 高精度
     });
-    //setSize()  统一设置width和style-width，canvas.width = displayWidth
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    //setSize()  canvas.width = displayWidth
+    renderer.setSize(window.innerWidth, window.innerHeight); // 设置canvas宽高和像素
     renderer.setClearColor(0x666666);
     renderer.shadowMap.enabled = true; //开启阴影
     renderer.shadowMap.type = THREE.PCFSoftShadowMap; //开启阴影柔滑
-
-    //将渲染器中的dom添加到body中
+    renderer.setPixelRatio(window.devicePixelRatio); // 防止形变
     document.body.appendChild(renderer.domElement);
 
+    //render all
+    function render() {
+        renderer.render(scene, camera);
+    }
+
+
     //texture
-    var textureLoader = new THREE.TextureLoader(); //设置贴图
+    textureLoader = new THREE.TextureLoader(); //设置贴图
 
     //multiMaterial for cube (right,left,top,bottom,back,front)
-    var cubeMaterials = [];
-    for (var i = 0; i < 6; i++) {
+    cubeMaterials = [];
+    for (i = 0; i < 6; i += 1) {
         cubeMaterials.push(new THREE.MeshPhongMaterial({
             color: 0xffffff,
-            map: textureLoader.load('../textures/' + (i + 1) + '.jpg', function () {
-                render();
-            }),
+            map: textureLoader.load('../textures/' + (i + 1) + '.jpg', render),
             overdraw: true
         }));
     }
+
     //cube
-    var cube = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 1), new THREE.MultiMaterial(cubeMaterials));
+    cube = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 1), new THREE.MultiMaterial(cubeMaterials));
     cube.castShadow = true; //产生阴影
     scene.add(cube);
 
-
     //wheel
-    var createWheel = function (arg) {
+    createWheel = function (arg) {
         var textureWheel = textureLoader.load('../assets/wheel.jpg', function (texture) {
-            texturePlane.wrapS = texturePlane.wrapT = THREE.RepeatWrapping;
+            textureWheel.wrapS = textureWheel.wrapT = THREE.RepeatWrapping;
             textureWheel.repeat.set(2, 2);
             arg.name = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.08, 35, 35), new THREE.MeshPhongMaterial({
                 color: 0xffffff,
@@ -55,7 +69,7 @@
             render();
         });
 
-    }
+    };
     createWheel({
         name: 'wheelLB',
         x: 0.5,
@@ -81,9 +95,9 @@
         z: -0.47
     });
 
-    //plane  接受光影的投射平面
+    //plane  
     //.load ( url, onLoad, onProgress, onError )
-    var texturePlane = textureLoader.load('../assets/plane.jpg', function (texture) {
+    texturePlane = textureLoader.load('../assets/plane.jpg', function (texture) {
         texturePlane.wrapS = texturePlane.wrapT = THREE.RepeatWrapping; //指定重复方式
         texturePlane.repeat.set(6, 6); //重复次数
         var plane = new THREE.Mesh(new THREE.PlaneGeometry(8, 8, 16, 16), new THREE.MeshPhongMaterial({
@@ -98,31 +112,54 @@
     });
 
 
-    //添加聚光灯
-    var light = new THREE.SpotLight(0xcccccc, 1, 100, Math.PI / 6, 25);
-    light.position.set(-1, 3.5, 6);
-    light.target = cube; //将灯光目标定为cube
-    light.castShadow = true; //开启聚光灯产生阴影
-    light.shadow.camera.visible = true;
-    light.shadow.mapSize.width = 1024;
-    light.shadow.mapSize.height = 1024;
-    scene.add(light);
+    //spotLight
+    spotLight = new THREE.SpotLight(0xcccccc, 1, 100, Math.PI / 6, 25);
+    spotLight.position.set(-1, 3.5, 6);
+    spotLight.target = cube; //将灯光目标定为cube
+    spotLight.castShadow = true; //开启聚光灯产生阴影
+    spotLight.shadow.camera.visible = true;
+    spotLight.shadow.mapSize.width = 1024;
+    spotLight.shadow.mapSize.height = 1024;
+    scene.add(spotLight);
 
     //helper
-    var helper = new THREE.CameraHelper(light.shadow.camera); //调试显示摄像机位置
+    //var helper = new THREE.CameraHelper(light.shadow.camera); //调试显示摄像机位置
     // scene.add(helper);
 
-    // 加点环境光，调整整体明亮度
-    var ambientLight = new THREE.AmbientLight(0x515151);
+    // AmbientLight
+    ambientLight = new THREE.AmbientLight(0x515151);
     scene.add(ambientLight);
 
-    //PS  所有需要显示的元素都要加入scene中
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight; // 设置camera的视口宽高比
+        camera.updateProjectionMatrix(); // 更新投影矩阵
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        controls.handleResize();
+        render();
+    }
+    window.addEventListener('resize', onWindowResize, false);
 
-    //render 最后一步，把所有的场景元素都展示（渲染）出来
-    var render = function () {
-        renderer.render(scene, camera);
+    /*global requestAnimationFrame*/
+    function animate() {
+        requestAnimationFrame(animate); // 递归
+        // controls.update(); // 更新鼠标控制
+        stats.update(); // 更新性能监测
+        render();
     }
 
-    render();
+    animate();
 
-})();
+    //controls   TrackballControls(obj, domElement)
+    controls = new THREE.TrackballControls(camera, renderer.domElement);
+    controls.rotateSpeed = 3.5; //旋转速度
+    controls.zoomSpeed = 3.5; // 变焦速度
+    controls.panSpeed = 3.5; // 平移速度
+    controls.noZoom = false; // 开启变焦
+    controls.noPan = false; // 开启移动
+    controls.staticMoving = true; // 
+    controls.dynamicDampingFactor = 0.1; //动态阻尼系数（灵敏度）
+    controls.keys = [65, 83, 68]; // A-S-D
+    controls.addEventListener('change', render);
+
+}
+init();
