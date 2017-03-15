@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>IFE Javascript task 04</title>
+    <style>
+        body {
+            font-size: 14px;
+            font-family: "Microsoft Yahei";
+        }
+        
+        ul li {
+            list-style: none;
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            text-align: center;
+            line-height: 25px;
+            margin: 0 5px;
+            background-color: #000;
+        }
+        
+        ul li span {
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <input id="user-input" type="text" placeholder="请输入一个数值" />
+    <button id="left-in" type="button" value="left-in">左侧入</button>
+    <button id="left-out" type="button" value="left-out">左侧出</button>
+    <button id="right-in" type="button" value="right-in">右侧入</button>
+    <button id="right-out" type="button" value="right-out">右侧出</button>
+
+    <ul id="list">
+    </ul>
+    <script>
+        /*                
+         *模拟一个队列，队列的每个元素是一个数字，初始队列为空
+         *有一个input输入框，以及4个操作按钮
+         *点击"左侧入"，将input中输入的数字从左侧插入队列中；
+         *点击"右侧入"，将input中输入的数字从右侧插入队列中；
+         *点击"左侧出"，读取并删除队列左侧第一个元素，并弹窗显示元素中数值；
+         *点击"右侧出"，读取并删除队列又侧第一个元素，并弹窗显示元素中数值；
+         *点击队列中任何一个元素，则该元素会被从队列中删除
+         */
+
+        /*渲染列表*/
+        function renderer(arr) {
+            var list, len, info;
+            list = document.getElementById('list');
+            len = arr.length;
+            info = '';
+            if (len) {
+                for (var i = 0; i < len; i += 1) {
+                    info += '<li><span>' + arr[i] + '</span></li>';
+                }
+            } else {
+                info = '';
+            }
+            list.innerHTML = info;
+        }
+
+        /*各按钮的操作*/
+        var todo;
+        todo = function () {
+
+            function leftIn(arr, userInput) {
+                arr.unshift(userInput);
+            }
+
+            function leftOut(arr, userInput) {
+                if (arr.length === 0) {
+                    alert('仓库已经空啦~');
+                } else {
+                    outnum = arr.shift();
+                    alert(outnum);
+                }
+            }
+
+            function rightIn(arr, userInput) {
+                arr.push(userInput);
+            }
+
+            function rightOut(arr, userInput) {
+                if (arr.length == 0) {
+                    alert('仓库已经空啦~')
+                } else {
+                    outnum = arr.pop();
+                    alert(outnum);
+                }
+            }
+            return {
+                leftOut: leftOut,
+                leftIn: leftIn,
+                rightOut: rightOut,
+                rightIn: rightIn
+            }
+        }();
+
+        /*点击事件*/
+        var arr;
+        arr = [];
+
+        function btnHandle(btnType) {
+            var userInput, uValue, outnum;
+            userInput = document.getElementById('user-input');
+            uValue = userInput.value.trim();
+
+            if (uValue) {
+                var reg = /^-*\d$/;
+
+                function err(tag) {
+                    if (tag) {
+                        userInput.value = '';
+                        userInput.placeholder = '请输入一个正确的数值!';
+                        userInput.focus();
+                    }
+                }
+
+                if (uValue.match(reg)) {
+                    //changeArr
+                    switch (btnType) {
+                    case 'left-in':
+                        todo.leftIn(arr, uValue);
+                        break;
+                    case 'left-out':
+                        todo.leftOut(arr);
+                        break;
+                    case 'right-in':
+                        todo.rightIn(arr, uValue);
+                        break;
+                    case 'right-out':
+                        todo.rightOut(arr);
+                        break;
+                    }
+
+                    renderer(arr); /*渲染列表*/
+
+                } else {
+                    err(1); /*非数字输入*/
+                };
+
+            } else {
+                err(1); /*空输入*/
+            };
+
+        }
+
+        /* 绑定事件*/
+        var btn, btnLen;
+        btn = document.getElementsByTagName('button');
+        btnLen = btn.length;
+
+        for (var i = 0; i < btnLen; i += 1) {
+            btn[i].addEventListener('click', function (e) {
+                e = e || window.event;
+                btnHandle(e.target.value.trim()); /*操作队列*/
+            });
+        }
+    </script>
+
+</body>
+
+</html>
